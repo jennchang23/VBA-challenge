@@ -1,0 +1,230 @@
+Sub VBAchallenge():
+
+Dim wsCount As Integer
+Dim ws As Integer
+
+Dim starting_ws As Worksheet
+Set starting_ws = ActiveSheet
+
+wsCount = ThisWorkbook.Worksheets.count
+
+For ws = 1 to wsCount
+    ThisWorkbook.Worksheets(ws).Activate
+
+'Give new columns a title for calculated data to live
+
+    'Range(1,10) = Yearly change
+    'Range (1,11) = Percent change
+    'Range (1,12) = Total Stock Volume
+    'Cell O2 = Greatest % Increase
+    'Cell O3 = Greatest % Decrease
+    'Cell O4 = Greatest Total volume
+    'Cell Q1 = Value
+    'Cell T1 = Opening Price
+    'Cell U1 = Closing Price
+
+Range("I1").Value = "Ticker"
+Range("P1").Value = "Ticker"
+Range("J1").Value = "Yearly Change"
+Range("K1").Value = "Percent Change"
+Range("L1").Value = "Total Stock Volume"
+Range("O2").Value = "Greatest % Increase"
+Range("O3").Value = "Greatest % Decrease"
+Range("O4").Value = "Greatest Total Volume"
+Range("Q1").Value = "Value"
+Range("T1").Value = "Opening Price"
+Range("U1").Value = "Closing Price"
+
+
+'Listing out unique Ticker values in Column I
+    'Loop through Column A. If cell value is not equal to previous cell, then print value in Column I, starting at Row 2.
+
+Dim origTickerRow As Long
+Dim tickerRow As Long
+tickerRow = 2
+
+For origTickerRow = 2 to Range("A2").End(xlDown).Row
+    If Cells(origTickerRow, 1).Value <> Cells(origTickerRow+1, 1).Value Then
+        Cells(tickerRow,9).Value = Cells(origTickerRow,1).Value
+        tickerRow = tickerRow + 1
+    End If
+Next origTickerRow
+
+'Opening Price --> find first instance of ticker value & print ticker's opening price in summary table
+
+Dim openingPrice As Double
+
+tickerRow = 2
+
+For origTickerRow = 2 To Range("A2").End(xlDown).row
+
+    If Cells(origTickerRow, 1).Value <> Cells(origTickerRow - 1, 1).Value Then
+        openingPrice = Cells(origTickerRow, 3).Value
+        Cells(tickerRow, 20).Value = openingPrice
+        origTickerRow = origTickerRow + 1
+        tickerRow = tickerRow + 1
+        openingPrice = 0
+    End If
+
+Next origTickerRow
+
+'Closing Price --> find last instance of ticker value & print ticker's opening price in summary table
+
+Dim closingPrice As Double
+
+tickerRow = 2
+
+For origTickerRow = 2 To Range("A2").End(xlDown).row
+
+    If Cells(origTickerRow, 1).Value <> Cells(origTickerRow + 1, 1).Value Then
+        closingPrice = Cells(origTickerRow, 6).Value
+        Cells(tickerRow, 21).Value = closingPrice
+        origTickerRow = origTickerRow + 1
+        tickerRow = tickerRow + 1
+        closingPrice = 0
+    End If
+
+Next origTickerRow
+
+'Yearly change (end vs. beginning) in column J
+    'For each value in column I, take the opening price of the first date and subtract from closing price of the end date
+
+tickerRow = 2
+
+For tickerRow = 2 To Range("I2").End(xlDown).row
+
+    Cells(tickerRow,10).Value = Cells(tickerRow,21).Value - Cells(tickerRow,20).Value
+
+Next tickerRow
+
+'Formatting column J - positive change = green; negative change = red; no change = blue
+
+For tickerRow = 2 to Range("I2").End(xlDown).row
+    If Cells(tickerRow,10).Value > 0 Then
+        Cells(tickerRow,10).Interior.ColorIndex = 4
+    Elseif Cells(tickerRow,10).Value < 0 Then
+        Cells(tickerRow,10).Interior.ColorIndex = 3
+    Elseif Cells(tickerRow,10).Value = 0 Then 
+        Cells(tickerRow,10).Interior.ColorIndex = 32
+    End If
+Next tickerRow
+
+'Percent change (end vs. beginning) in column 11
+    'For value in column I, take the opening price of the first date and subtract from closing price of the end date and then divide by the opening price of the first date
+
+tickerRow = 2
+Dim percentChange As Double
+
+For tickerRow = 2 To Range("I2").End(xlDown).Row
+
+    If Cells(tickerRow,20).Value = 0 Then
+        percentChange = 0
+        Cells(tickerRow, 11).Value = percentChange
+        Cells(tickerRow, 11).NumberFormat = "0.00%"
+    Else
+        percentChange = (Cells(tickerRow, 21).Value - Cells(tickerRow, 20).Value) / Cells(tickerRow, 20).Value
+        Cells(tickerRow, 11).Value = percentChange
+        Cells(tickerRow, 11).NumberFormat = "0.00%"
+    End If
+
+Next tickerRow
+
+'Total stock volume in column 12
+    'If column A matches cell I2, etc. add up column G
+
+Dim totalSV As Double
+totalSV = 0
+
+tickerRow = 2
+
+For origTickerRow = 2 To Range("A2").End(xlDown).Row
+
+    If Cells(origTickerRow + 1, 1).Value <> Cells(origTickerRow, 1).Value Then
+        totalSV = totalSV + Cells(origTickerRow, 7).Value
+        Cells(tickerRow, 12).Value = totalSV
+        tickerRow = tickerRow + 1
+        totalSV = 0
+    Else
+        totalSV = totalSV + Cells(origTickerRow,7).value
+    
+    End If
+Next origTickerRow
+
+'Find Greatest % Increase in column K and fill in cell P2 with Ticker value and Q2 with Percent Change value
+
+Dim greatestIncrease As Double
+Dim greatestIncreaseTicker As String
+
+greatestIncrease = 0
+greatestIncreaseTicker = "TBD"
+
+For tickerRow = 2 To Range("I2").End(xlDown).Row
+    If Cells(tickerRow,11).Value >= greatestIncrease Then
+        greatestIncrease = Cells(tickerRow,11).Value
+        greatestIncreaseTicker = Cells(tickerRow,9).Value
+    Else
+        greatestIncrease = greatestIncrease
+        greatestIncreaseTicker = greatestIncreaseTicker
+    End If
+
+Next tickerRow
+
+Range("P2").Value = greatestIncreaseTicker
+Range("Q2").Value = greatestIncrease
+Range("Q2").NumberFormat = "0.00%"
+
+'Find Greatest % Decrease in column K and fill in cell P3 with Ticker value and Q3 with Percent Change value
+
+Dim greatestDecrease As Double
+Dim greatestDecreaseTicker As String
+
+greatestDecrease = 0
+greatestDecreaseTicker = "TBD"
+
+For tickerRow = 2 To Range("I2").End(xlDown).Row
+    If Cells(tickerRow,11).Value <= greatestDecrease Then
+        greatestDecrease = Cells(tickerRow,11).Value
+        greatestDecreaseTicker = Cells(tickerRow,9).Value
+    Else
+        greatestDecrease = greatestDecrease
+        greatestDecreaseTicker = greatestDecreaseTicker
+    End If
+
+Next tickerRow
+
+Range("P3").Value = greatestDecreaseTicker
+Range("Q3").Value = greatestDecrease
+Range("Q3").NumberFormat = "0.00%"
+
+'Find Greatest Total Volume in column L and fill in cell P4 with Ticker value and Q4 with Total Volume value
+
+Dim greatestTotalVolume As Double
+Dim greatestTVTicker As String
+
+greatestTotalVolume = 0
+greatestTVTicker = "TBD"
+
+For tickerRow = 2 To Range("I2").End(xlDown).Row
+    If Cells(tickerRow,12).Value >= greatestTotalVolume Then
+        greatestTotalVolume = Cells(tickerRow,12).Value
+        greatestTVTicker = Cells(tickerRow,9).Value
+    Else
+        greatestTotalVolume = greatestTotalVolume
+        greatestTVTicker = greatestTVTicker
+    End If
+
+Next tickerRow
+
+Range("P4").Value = greatestTVTicker
+Range("Q4").Value = greatestTotalVolume
+
+'Have all columns AutoFit
+Columns("A:U").AutoFit
+
+'Repeat for every worksheet
+
+Next
+
+starting_ws.Activate
+
+End Sub
